@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Will You Be My Valentine?</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+
+<!-- GSAP -->
+<script src="https://unpkg.com/gsap@3/dist/gsap.min.js"></script>
+
+<!-- Three.js -->
+<script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
+
+<!-- Nike-style font fallback -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700;900&display=swap" rel="stylesheet">
+
+<style>
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: #000;
+  overflow: hidden;
+  font-family: 'Inter', sans-serif;
+}
+
+#scene {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+}
+
+.ui {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 20px;
+}
+
+h1 {
+  font-size: clamp(1.8rem, 6vw, 4rem);
+  font-weight: 900;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  background: linear-gradient(90deg,#ff2a6d,#ff7eb3,#ffd1e8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 30px rgba(255,60,120,0.6);
+}
+
+.buttons {
+  margin-top: 32px;
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.btn {
+  padding: 14px 36px;
+  border-radius: 999px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  border: none;
+  cursor: pointer;
+  font-size: 0.95rem;
+  min-width: 120px;
+  touch-action: manipulation;
+}
+
+.yes {
+  background: radial-gradient(circle at top,#ff5fa2,#ff2a6d);
+  color: white;
+  box-shadow: 0 0 30px rgba(255,60,120,0.8);
+}
+
+.no {
+  background: rgba(255,255,255,0.08);
+  color: #ffd6e8;
+  box-shadow: 0 0 16px rgba(255,200,220,0.3);
+}
+
+.message {
+  margin-top: 24px;
+  font-size: 1.1rem;
+  color: #ffb6d9;
+  opacity: 0;
+}
+</style>
+</head>
+
+<body>
+
+<canvas id="scene"></canvas>
+
+<div class="ui">
+  <div>
+    <h1 id="title">Will You Be My Valentine?</h1>
+
+    <div class="buttons">
+      <button class="btn yes" id="yesBtn">YES ❤️</button>
+      <button class="btn no" id="noBtn">NO 🤍</button>
+    </div>
+
+    <div class="message" id="message"></div>
+  </div>
+</div>
+
+<script>
+/* =========================
+   MOBILE DETECTION
+========================= */
+const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+/* =========================
+   THREE.JS SETUP
+========================= */
+const canvas = document.getElementById('scene');
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(0x000000, 6, 18);
+
+const camera = new THREE.PerspectiveCamera(
+  65,
+  window.innerWidth / window.innerHeight,
+  0.1,
+  100
+);
+camera.position.z = isMobile ? 10 : 8;
+
+const renderer = new THREE.WebGLRenderer({
+  canvas,
+  antialias: true,
+  alpha: true,
+  powerPreference: "high-performance"
+});
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 1.5 : 2));
+
+/* Lights */
+scene.add(new THREE.AmbientLight(0xff4d88, 0.5));
+
+const point = new THREE.PointLight(0xff2a6d, 1.8, 30);
+point.position.set(0, 0, 6);
+scene.add(point);
+
+/* Particles */
+const particleCount = isMobile ? 400 : 900;
+const geometry = new THREE.BufferGeometry();
+const positions = new Float32Array(particleCount * 3);
+
+for (let i = 0; i < positions.length; i++) {
+  positions[i] = (Math.random() - 0.5) * 14;
+}
+
+geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+const material = new THREE.PointsMaterial({
+  color: 0xff4d88,
+  size: isMobile ? 0.06 : 0.05,
+  transparent: true,
+  opacity: 0.85
+});
+
+const particles = new THREE.Points(geometry, material);
+scene.add(particles);
+
+/* Animation loop */
+function animate() {
+  particles.rotation.y += isMobile ? 0.0006 : 0.001;
+  particles.rotation.x += isMobile ? 0.0003 : 0.0005;
+  renderer.render(scene, camera);
+  requestAnimationFrame(animate);
+}
+animate();
+
+/* Resize */
+window.addEventListener("resize", () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+/* =========================
+   GSAP ANIMATIONS
+========================= */
+gsap.from("#title", {
+  y: 40,
+  opacity: 0,
+  duration: 1.6,
+  ease: "power4.out"
+});
+
+gsap.from(".btn", {
+  opacity: 0,
+  y: 20,
+  stagger: 0.15,
+  delay: 0.8,
+  duration: 1,
+  ease: "power3.out"
+});
+
+gsap.to(".yes", {
+  scale: 1.08,
+  repeat: -1,
+  yoyo: true,
+  duration: 1.5,
+  ease: "power1.inOut"
+});
+
+/* =========================
+   INTERACTIONS (TOUCH SAFE)
+========================= */
+const msg = document.getElementById("message");
+
+document.getElementById("yesBtn").addEventListener("click", () => {
+  msg.textContent = "💖 Best Valentine Ever 💖";
+  gsap.to(msg, { opacity: 1, y: -8, duration: 0.5 });
+  gsap.to(particles.scale, { x: 1.4, y: 1.4, z: 1.4, duration: 1 });
+});
+
+document.getElementById("noBtn").addEventListener("click", () => {
+  msg.textContent = "🤍 Love still wins 🤍";
+  gsap.to(msg, { opacity: 1, y: -8, duration: 0.5 });
+});
+</script>
+
+</body>
+</html>
